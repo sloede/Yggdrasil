@@ -14,6 +14,8 @@ sources = [
 # Bash recipe for building across all platforms
 script = raw"""
 cd $WORKSPACE/srcdir/p4est-2.2/
+
+# Apply platform-sepcific fixes
 if [[ "${target}" == *-freebsd* ]]; then
   export LIBS="-lm"
 elif [[ "${target}" == x86_64-linux-musl ]]; then
@@ -24,10 +26,20 @@ elif [[ "${target}" == x86_64-linux-musl ]]; then
     sed -i 's/cross_compiling=no/cross_compiling=yes/' configure
     sed -i 's/cross_compiling=no/cross_compiling=yes/' sc/configure
 fi
+
+# Set compilers to be MPI compilers
+export CC=mpicc
+export CXX=mpicxx
+export FC=mpif90
+export F77=mpif77
+
+# Set include/library paths
 export CPPFLAGS="-I${includedir}"
 export LDFLAGS="-L${libdir}"
 export BLAS_LIBS="${libdir}/libopenblas.${dlext}"
-./configure --prefix=${prefix} --build=${MACHTYPE} --host=${target} --disable-static
+
+./configure --prefix=${prefix} --build=${MACHTYPE} --host=${target} --disable-static --enable-mpi
+
 make -j${nproc}
 make install
 """
@@ -47,6 +59,7 @@ products = [
 dependencies = [
     Dependency(PackageSpec(name="Zlib_jll", uuid="83775a58-1f1d-513f-b197-d71354ab007a"))
     Dependency(PackageSpec(name="OpenBLAS32_jll", uuid="656ef2d0-ae68-5445-9ca0-591084a874a2"))
+    Dependency(PackageSpec(name="MPICH_jll", uuid="7cb0a576-ebde-5e09-9194-50597f1243b4"))
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
